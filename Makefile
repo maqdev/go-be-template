@@ -1,5 +1,5 @@
 TEST_OPTS=--race
-LINT_OPTS=""
+LINT_OPTS=
 
 .PHONY: install-tools
 install-tools:
@@ -17,12 +17,16 @@ build:
 test:
 	@go test $(TEST_OPTS) ./...
 
-.PHONY: lint-n-fix
-lint-n-fix: $(eval LINT_OPTS=--fix) lint
-
 .PHONY: lint
 lint:
 	@golangci-lint run -v --timeout 30m --exclude-use-default $(LINT_OPTS)
+
+.PHONY: _enable_lint_fix
+_enable_lint_fix:
+	@$(eval LINT_OPTS=--fix)
+
+.PHONY: lint-n-fix
+lint-n-fix: _enable_lint_fix lint
 
 .PHONY: init
 init:

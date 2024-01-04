@@ -11,5 +11,7 @@
 - Rate-limiting
 - Clear cache while migrating?
 - Graceful shutdown
+- Middleware with timeout / telemetry / logging?
+- NotFound, CORS?
 
 Find and replace `YEY` with your project name and `github.com/maqdev/go-be-template` with your github repo.

@@ -18,7 +18,7 @@ func LoadConfig(envPrefix, configPath string) (*AppConfig, error) {
 	return &cfg, nil
 }
 
-//nolint: gochecknoglobals // test helper and needs to be stored in a global variable
+// nolint: gochecknoglobals // test helper and needs to be stored in a global variable
 var sourcesRoot = findSourcesRoot()
 
 func findSourcesRoot() string {

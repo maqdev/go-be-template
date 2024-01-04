@@ -7,15 +7,14 @@ import (
 )
 
 // NewStdLogger creates a slog logger with specified level
-// All errors are sent to stderr & the rest goes to stdout
+// All errors are sent to stderr & the rest goes to stdout.
 func NewStdLogger(level slog.Level) *slog.Logger {
 	return slog.New(NewStdHandler(level))
 }
 
 // NewStdHandler creates a slog handler with specified level
-// All errors are sent to stderr & the rest goes to stdout
+// All errors are sent to stderr & the rest goes to stdout.
 func NewStdHandler(level slog.Level) slog.Handler {
-
 	return stdHandler{
 		handler: slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: level,

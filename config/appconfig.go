@@ -15,6 +15,8 @@ type HTTPConfig struct {
 	Address         string
 	ShutdownDelay   time.Duration
 	ShutdownTimeout time.Duration
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
 }
 
 type DBConfig struct {

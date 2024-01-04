@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/go-faster/errors"
-	api "github.com/maqdev/go-be-template/gen/api/authors"
-	"github.com/maqdev/go-be-template/service"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/go-faster/errors"
+	api "github.com/maqdev/go-be-template/gen/api/authors"
+	"github.com/maqdev/go-be-template/service"
 
 	"github.com/maqdev/go-be-template/config"
 	"github.com/maqdev/go-be-template/util/logutil"
@@ -58,31 +59,14 @@ func run() error {
 		Handler:                      server,
 		DisableGeneralOptionsHandler: true,
 		TLSConfig:                    nil,
-		ReadTimeout:                  time.Second * 15,
-		WriteTimeout:                 time.Second * 15,
+		ReadTimeout:                  cfg.HTTP.ReadTimeout,
+		WriteTimeout:                 cfg.HTTP.WriteTimeout,
 	}
 
-	signalChan := make(chan os.Signal)
+	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 	defer close(signalChan)
-
-	go func() {
-		sig := <-signalChan
-
-		if cfg.HTTP.ShutdownDelay > 0 {
-			log.Info("Shutdown signal was received, delaying", "signal", sig, "timeout", cfg.HTTP.ShutdownDelay)
-			time.Sleep(cfg.HTTP.ShutdownDelay)
-		}
-
-		log.Info("Shutting down http server", "signal", sig)
-
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.HTTP.ShutdownTimeout)
-		defer cancel()
-
-		if err := httpServer.Shutdown(ctx); err != nil {
-			log.Error("Couldn't shutdown gracefully", "err", err)
-		}
-	}()
+	go handleClose(log, cfg, &httpServer, signalChan)
 
 	err = httpServer.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -91,4 +75,23 @@ func run() error {
 	}
 
 	return nil
+}
+
+func handleClose(log *slog.Logger, cfg *config.AppConfig, httpServer *http.Server, signalChan chan os.Signal) {
+	sig := <-signalChan
+
+	if cfg.HTTP.ShutdownDelay > 0 {
+		log.Info("Shutdown signal was received, delaying", "signal", sig, "timeout", cfg.HTTP.ShutdownDelay)
+		time.Sleep(cfg.HTTP.ShutdownDelay)
+	}
+
+	log.Info("Shutting down http server", "signal", sig)
+
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.HTTP.ShutdownTimeout)
+	defer cancel()
+
+	err := httpServer.Shutdown(ctx)
+	if err != nil {
+		log.Error("Couldn't shutdown gracefully", "err", err)
+	}
 }

@@ -4,4 +4,6 @@ http:
   address: 127.0.0.1:8080
   shutdownTimeout: 3s # timeout for graceful shutdown
   shutdownDelay: 5s # delay before starting shutdown, to allow for load balancer to stop sending traffic
+  readTimeout: 15s
+  writeTimeout: 15s
 db:
