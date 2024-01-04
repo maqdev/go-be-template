@@ -23,8 +23,3 @@ services:
     volumes:
         - ./db/migrations:/migrations
     command: "-path=/migrations/ -database postgres://${APP_DB_OWNER_USER}:${APP_DB_OWNER_PASS}@postgres/${APP_DB_NAME}?sslmode=disable up"
-  gen-openapi:
-    image: ghcr.io/ogen-go/ogen:v0.81.1
-    volumes:
-      - ./api:/api
-    command: "--target "

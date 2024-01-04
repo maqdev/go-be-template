@@ -23,3 +23,11 @@ lint-n-fix: $(eval LINT_OPTS=--fix) lint
 .PHONY: lint
 lint:
 	@golangci-lint run -v --timeout 30m --exclude-use-default $(LINT_OPTS)
+
+.PHONY: init
+init:
+	@docker-compose up -d
+
+.PHONY: reinit
+reinit:
+	@docker-compose up -d --force-recreate
