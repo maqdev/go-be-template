@@ -5,13 +5,17 @@ import (
 	"strings"
 )
 
-// the final version string
+// the final version string.
 var version string
 
-// -ldflags "-X github.com/maqdev/go-be-template/config/version.branch=master"
+// -ldflags "-X github.com/maqdev/go-be-template/config/version.branch=master".
+//
+//nolint:gochecknoglobals // passed by the build flags
 var branch string
 
-// -ldflags "-X github.com/maqdev/go-be-template/config/version.build=alpha"
+// -ldflags "-X github.com/maqdev/go-be-template/config/version.build=alpha".
+//
+//nolint:gochecknoglobals // passed by the build flags
 var build string
 
 const (

@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -x
 
 # Check if the script was provided with exactly one argument
 if [ $# -ne 1 ]; then
@@ -30,4 +29,4 @@ FLAGS="-X $version_pkg.branch=$BRANCH -X $version_pkg.build=$BUILD"
 mkdir -p bin
 
 # Build the binary passed in by arguments, defaulting to all cmds
-go build -trimpath -ldflags "$FLAGS" -v -o "bin/" "${@:-./cmd/...}"
+go build -trimpath -ldflags "$FLAGS" -v -o "bin/" "./cmd/..."
