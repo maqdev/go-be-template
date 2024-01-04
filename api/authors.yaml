@@ -1,0 +1,133 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: GO BE TEMPLATE
+  license:
+    name: BSD 3-Clause License
+servers:
+  - url: http://example.com
+paths:
+  /authors:
+    get:
+      summary: List all authors
+#      operationId: listAuthors
+      tags:
+        - authors
+      parameters:
+        - name: token
+          in: query
+          description: Pagination token
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: A paged array of authors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedAuthors"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Create a new author
+#      operationId: createAuthor
+      tags:
+        - authors
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+              required:
+                - name
+      responses:
+        201:
+          description: Author was created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                required:
+                  - id
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /authors/{authorId}:
+    get:
+      summary: Get author by their ID
+#      operationId: getAuthorById
+      tags:
+        - authors
+      parameters:
+        - name: authorId
+          in: path
+          required: true
+          description: The id of the author to retrieve
+          schema:
+            type: string
+      responses:
+        200:
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Author"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Author:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+    PagedAuthors:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/Author"
+        nextToken:
+          type: string
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
