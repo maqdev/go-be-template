@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"net/http"
 
 	"github.com/maqdev/go-be-template/config"
 	api "github.com/maqdev/go-be-template/gen/api/authors"
@@ -17,22 +19,37 @@ type handler struct {
 	cfg *config.AppConfig
 }
 
-func (h handler) AuthorsAuthorIdGet(ctx context.Context, params api.AuthorsAuthorIdGetParams) (*api.Author, error) {
-	// TODO implement me
+func (h handler) AuthorsAuthorIDGet(ctx context.Context, params api.AuthorsAuthorIDGetParams) (*api.Author, error) {
+	//TODO implement me
 	panic("implement me")
 }
 
 func (h handler) AuthorsGet(ctx context.Context, params api.AuthorsGetParams) (*api.PagedAuthors, error) {
-	// TODO implement me
+	//TODO implement me
 	panic("implement me")
 }
 
 func (h handler) AuthorsPost(ctx context.Context, req api.OptAuthorsPostReq) (*api.AuthorsPostCreated, error) {
-	// TODO implement me
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h handler) LoginPost(ctx context.Context, req *api.LoginPostReq) (*api.LoginPostCreated, error) {
+	//TODO implement me
 	panic("implement me")
 }
 
 func (h handler) NewError(ctx context.Context, err error) *api.ErrorStatusCode {
+	if errors.Is(err, ErrInvalidToken) {
+		return &api.ErrorStatusCode{
+			StatusCode: http.StatusUnauthorized,
+			Response: api.Error{
+				Code:    "INVALID_TOKEN",
+				Message: "Invalid token",
+			},
+		}
+	}
+
 	// TODO implement me
 	panic("implement me")
 }

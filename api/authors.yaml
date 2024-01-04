@@ -7,6 +7,35 @@ info:
 servers:
   - url: http://example.com
 paths:
+  /login:
+    post:
+      summary: Create a login token
+      #      operationId: createAuthor
+      tags:
+        - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        201:
+          description: Auth token was created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                required:
+                  - token
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /authors:
     get:
       summary: List all authors
@@ -43,11 +72,13 @@ paths:
     post:
       summary: Create a new author
 #      operationId: createAuthor
+      security:
+        - BearerAuth: []
       tags:
         - authors
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               properties:
@@ -73,14 +104,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-  /authors/{authorId}:
+  /authors/{authorID}:
     get:
       summary: Get author by their ID
 #      operationId: getAuthorById
       tags:
         - authors
       parameters:
-        - name: authorId
+        - name: authorID
           in: path
           required: true
           description: The id of the author to retrieve
@@ -100,6 +131,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     Author:
       type: object

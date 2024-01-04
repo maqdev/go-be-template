@@ -45,8 +45,7 @@ func run() error {
 	log = logutil.NewStdLogger(cfg.Log.Level.SLogLevel())
 	slog.SetDefault(log)
 
-	handler := service.NewHandler(cfg)
-	server, err := api.NewServer(handler)
+	server, err := api.NewServer(service.NewHandler(cfg), service.AuthHandler(cfg))
 	if err != nil {
 		log.Error("Server initialization failed", "err", err)
 		return err
