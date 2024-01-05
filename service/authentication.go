@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	"github.com/go-faster/errors"
 	"github.com/maqdev/go-be-template/config"
 	api "github.com/maqdev/go-be-template/gen/api/authors"
@@ -15,7 +16,8 @@ type authHandler struct {
 	cfg *config.AppConfig
 }
 
-func (a authHandler) HandleBearerAuth(ctx context.Context, operationName string, t api.BearerAuth) (context.Context, error) {
+func (a authHandler) HandleBearerAuth(ctx context.Context, operationName string, t api.BearerAuth) (
+	context.Context, error) {
 	if t.Token == "123" {
 		return ctx, nil
 	}

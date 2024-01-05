@@ -116,7 +116,8 @@ paths:
           required: true
           description: The id of the author to retrieve
           schema:
-            type: string
+            type: integer
+            format: int64
       responses:
         200:
           description: Expected response to a valid request
@@ -147,6 +148,9 @@ components:
           format: int64
         name:
           type: string
+        extra:
+          type: object
+          additionalProperties: true
     PagedAuthors:
       type: object
       properties:
