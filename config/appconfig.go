@@ -23,7 +23,7 @@ type HTTPConfig struct {
 }
 
 type DBConfig struct {
-	Url            string
+	URL            string
 	Password       string
 	MaxConnections int32
 }
@@ -48,7 +48,7 @@ func (l *Level) SLogLevel() slog.Level {
 }
 
 func (dbc DBConfig) CreatePool(ctx context.Context) (*pgxpool.Pool, error) {
-	config, err := pgxpool.ParseConfig(dbc.Url)
+	config, err := pgxpool.ParseConfig(dbc.URL)
 	if err != nil {
 		return nil, err
 	}
