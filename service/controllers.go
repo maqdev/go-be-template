@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/maqdev/go-be-template/gen/db"
-	"net/http"
 
 	"github.com/go-faster/jx"
 	"github.com/maqdev/go-be-template/util/idutil"
@@ -35,21 +37,33 @@ func (h *handler) AuthorsAuthorIDGet(ctx context.Context, params api.AuthorsAuth
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get author from DB: %w", err)
+	}
+
+	var authorExtra api.OptAuthorExtra
+	if author.Extra != nil {
+		extra := make(map[string]jx.Raw)
+		d := jx.DecodeBytes(author.Extra)
+		err = d.Obj(func(d *jx.Decoder, key string) error {
+			var err error
+			extra[key], err = d.Raw()
+			return err
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode extra: %w", err)
+		}
+		authorExtra = api.NewOptAuthorExtra(extra)
 	}
 
 	return &api.Author{
-		ID:   author.ID,
-		Name: author.Name,
-		Extra: api.NewOptAuthorExtra(map[string]jx.Raw{
-			"foo": jx.Raw(`{"bar": "baz"}`),
-		}),
+		ID:    author.ID,
+		Name:  author.Name,
+		Extra: authorExtra,
 	}, nil
 }
 
 func (h handler) AuthorsGet(ctx context.Context, params api.AuthorsGetParams) (*api.PagedAuthors, error) {
-
-	//db.Queries{}.AuthorsGet(ctx, h.dbPool, params)
+	// db.Queries{}.AuthorsGet(ctx, h.dbPool, params)
 
 	return nil, errors.New("abc")
 }

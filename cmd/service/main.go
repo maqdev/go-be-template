@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/go-faster/errors"
 	api "github.com/maqdev/go-be-template/gen/api/authors"
