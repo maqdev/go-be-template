@@ -3,6 +3,9 @@ package service
 import (
 	"context"
 	"errors"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/maqdev/go-be-template/gen/db"
 	"net/http"
 
 	"github.com/go-faster/jx"
@@ -13,23 +16,31 @@ import (
 	api "github.com/maqdev/go-be-template/gen/api/authors"
 )
 
-func NewHandler(cfg *config.AppConfig) api.Handler {
+func NewHandler(cfg *config.AppConfig, dbPool *pgxpool.Pool) api.Handler {
 	return &handler{
-		cfg: cfg,
+		cfg:     cfg,
+		queries: db.New(dbPool),
 	}
 }
 
 type handler struct {
-	cfg *config.AppConfig
+	cfg     *config.AppConfig
+	queries *db.Queries
 }
 
-func (h handler) AuthorsAuthorIDGet(ctx context.Context, params api.AuthorsAuthorIDGetParams) (*api.Author, error) {
-	if params.AuthorID != 1 {
-		return nil, ErrNotFound
+func (h *handler) AuthorsAuthorIDGet(ctx context.Context, params api.AuthorsAuthorIDGetParams) (*api.Author, error) {
+	author, err := h.queries.GetAuthor(ctx, params.AuthorID)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
 	}
+
 	return &api.Author{
-		ID:   1,
-		Name: "Mag",
+		ID:   author.ID,
+		Name: author.Name,
 		Extra: api.NewOptAuthorExtra(map[string]jx.Raw{
 			"foo": jx.Raw(`{"bar": "baz"}`),
 		}),
@@ -37,6 +48,9 @@ func (h handler) AuthorsAuthorIDGet(ctx context.Context, params api.AuthorsAutho
 }
 
 func (h handler) AuthorsGet(ctx context.Context, params api.AuthorsGetParams) (*api.PagedAuthors, error) {
+
+	//db.Queries{}.AuthorsGet(ctx, h.dbPool, params)
+
 	return nil, errors.New("abc")
 }
 

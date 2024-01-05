@@ -1,8 +1,11 @@
 package config
 
 import (
+	"context"
 	"log/slog"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type AppConfig struct {
@@ -20,9 +23,9 @@ type HTTPConfig struct {
 }
 
 type DBConfig struct {
-	Host     string
-	Username string
-	Password string
+	Url            string
+	Password       string
+	MaxConnections int32
 }
 
 type LogConfig struct {
@@ -42,4 +45,17 @@ func (l *Level) UnmarshalString(s string) error {
 
 func (l *Level) SLogLevel() slog.Level {
 	return slog.Level(*l)
+}
+
+func (dbc DBConfig) CreatePool(ctx context.Context) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(dbc.Url)
+	if err != nil {
+		return nil, err
+	}
+	if dbc.Password != "" {
+		config.ConnConfig.Password = dbc.Password
+	}
+	config.MaxConns = dbc.MaxConnections
+
+	return pgxpool.NewWithConfig(ctx, config)
 }

@@ -7,3 +7,6 @@ http:
   readTimeout: 15s
   writeTimeout: 15s
 db:
+  url: postgres://app@127.0.0.1:5432/app_db
+  password: app_pwd
+  maxConnections: 4

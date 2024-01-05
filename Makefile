@@ -1,9 +1,17 @@
 TEST_OPTS=--race
 LINT_OPTS=
 
+LINTER_VERSION=v1.55.2
+SQLC_VERSION=v1.25.0
+
 .PHONY: install-tools
 install-tools:
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
+	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION)
+
+.PHONY: sqlc
+sqlc:
+	@sqlc generate
 
 .PHONY: build
 codegen:
@@ -12,6 +20,9 @@ codegen:
 .PHONY: build
 build:
 	@./build.sh github.com/maqdev/go-be-template/config
+
+.PHONY: build-all
+build-all: codegen sqlc build
 
 .PHONY: test
 test:
@@ -30,8 +41,12 @@ lint-n-fix: _enable_lint_fix lint
 
 .PHONY: init
 init:
-	@docker-compose up -d
+	@docker-compose run migrations # this will create db and run migrations
+
+.PHONY: deinit
+deinit:
+	@docker-compose down
 
 .PHONY: reinit
-reinit:
-	@docker-compose up -d --force-recreate
+reinit: deinit init
+

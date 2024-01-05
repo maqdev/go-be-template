@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
 	"net/http"
 	"os"
@@ -45,7 +46,16 @@ func run() error {
 	log = logutil.NewStdLogger(cfg.Log.Level.SLogLevel())
 	slog.SetDefault(log)
 
-	server, err := api.NewServer(service.NewHandler(cfg), service.AuthHandler(cfg))
+	ctx := context.Background()
+
+	var pool *pgxpool.Pool
+	pool, err = cfg.DB.CreatePool(ctx)
+	if err != nil {
+		log.Error("Couldn't create DB pool", "err", err)
+		return err
+	}
+
+	server, err := api.NewServer(service.NewHandler(cfg, pool), service.AuthHandler(cfg))
 	if err != nil {
 		log.Error("Server initialization failed", "err", err)
 		return err
