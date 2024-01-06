@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,6 +20,9 @@ import (
 	"github.com/maqdev/go-be-template/config"
 	api "github.com/maqdev/go-be-template/gen/api/authors"
 )
+
+const MaxPageSize = 500
+const DefaultPageSize = 10
 
 func NewHandler(cfg *config.AppConfig, dbPool *pgxpool.Pool) api.Handler {
 	return &handler{
@@ -40,42 +46,67 @@ func (h *handler) AuthorsAuthorIDGet(ctx context.Context, params api.AuthorsAuth
 		return nil, fmt.Errorf("failed to get author from DB: %w", err)
 	}
 
-	var authorExtra api.OptAuthorExtra
-	if author.Extra != nil {
-		extra := make(map[string]jx.Raw)
-		d := jx.DecodeBytes(author.Extra)
-		err = d.Obj(func(d *jx.Decoder, key string) error {
-			var err error
-			extra[key], err = d.Raw()
-			return err
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode extra: %w", err)
-		}
-		authorExtra = api.NewOptAuthorExtra(extra)
+	authorRes, err := dbAuthorToResp(author)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert author to response: %w", err)
 	}
 
-	return &api.Author{
-		ID:    author.ID,
-		Name:  author.Name,
-		Extra: authorExtra,
-	}, nil
+	return authorRes, nil
 }
 
 func (h handler) AuthorsGet(ctx context.Context, params api.AuthorsGetParams) (*api.PagedAuthors, error) {
-	// db.Queries{}.AuthorsGet(ctx, h.dbPool, params)
+	listParams := db.ListAuthorsParams{
+		Previd: pgtype.Int8{},
+		Lim:    min(params.Limit.Or(DefaultPageSize), MaxPageSize),
+	}
+	if params.Token.Set {
+		prevID, err := strconv.ParseInt(params.Token.Value, 36, 64)
+		if err == nil {
+			listParams.Previd.Int64 = prevID
+			listParams.Previd.Valid = true
+		}
+	}
 
-	return nil, errors.New("abc")
+	authors, err := h.queries.ListAuthors(ctx, listParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list authors from DB: %w", err)
+	}
+
+	res := &api.PagedAuthors{
+		Content:   nil,
+		NextToken: api.OptString{},
+	}
+	if len(authors) > 0 {
+		res.Content = make([]api.Author, len(authors))
+		for i, author := range authors {
+			var resAuthor *api.Author
+			resAuthor, err = dbAuthorToResp(author)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert author to response: %w", err)
+			}
+			res.Content[i] = *resAuthor
+		}
+		if len(authors) >= int(listParams.Lim) {
+			res.NextToken.Value = strconv.FormatInt(authors[len(authors)-1].ID, 36)
+			res.NextToken.Set = true
+		}
+	}
+	return res, nil
 }
 
-func (h handler) AuthorsPost(ctx context.Context, req api.OptAuthorsPostReq) (*api.AuthorsPostCreated, error) {
-	// TODO implement me
-	panic("implement me")
-}
+func (h handler) AuthorsPost(ctx context.Context, req *api.AuthorsPostReq) (*api.AuthorsPostCreated, error) {
+	// todo: validate name
 
-func (h handler) LoginPost(ctx context.Context, req *api.LoginPostReq) (*api.LoginPostCreated, error) {
-	// TODO implement me
-	panic("implement me")
+	id, err := h.queries.CreateAuthor(ctx, db.CreateAuthorParams{
+		Name: req.Name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create author in DB: %w", err)
+	}
+
+	return &api.AuthorsPostCreated{
+		ID: id,
+	}, nil
 }
 
 func (h handler) NewError(ctx context.Context, err error) *api.ErrorStatusCode {
@@ -109,4 +140,27 @@ func (h handler) NewError(ctx context.Context, err error) *api.ErrorStatusCode {
 			Message: "Error #" + errorID,
 		},
 	}
+}
+
+func dbAuthorToResp(author db.Author) (*api.Author, error) {
+	var authorExtra api.OptAuthorExtra
+	if author.Extra != nil {
+		extra := make(map[string]jx.Raw)
+		d := jx.DecodeBytes(author.Extra)
+		err := d.Obj(func(d *jx.Decoder, key string) error {
+			var err error
+			extra[key], err = d.Raw()
+			return err
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode extra: %w", err)
+		}
+		authorExtra = api.NewOptAuthorExtra(extra)
+	}
+
+	return &api.Author{
+		ID:    author.ID,
+		Name:  author.Name,
+		Extra: authorExtra,
+	}, nil
 }

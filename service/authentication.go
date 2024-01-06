@@ -16,7 +16,7 @@ type authHandler struct {
 	cfg *config.AppConfig
 }
 
-func (a authHandler) HandleBearerAuth(ctx context.Context, operationName string, t api.BearerAuth) (
+func (a authHandler) HandleBearerAuth(ctx context.Context, _ /*operationName*/ string, t api.BearerAuth) (
 	context.Context, error) {
 	if t.Token == "123" {
 		return ctx, nil

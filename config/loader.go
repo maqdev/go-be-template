@@ -1,6 +1,7 @@
 package config
 
 import (
+	"path"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -11,7 +12,12 @@ import (
 
 func LoadConfig(envPrefix, configPath string) (*AppConfig, error) {
 	var cfg AppConfig
-	err := fig.Load(&cfg, fig.File(configPath), fig.UseEnv(envPrefix))
+	dir := fig.Dirs(".")
+	if path.IsAbs(configPath) {
+		dir = fig.Dirs(path.Dir(configPath))
+		configPath = path.Base(configPath)
+	}
+	err := fig.Load(&cfg, dir, fig.File(configPath), fig.UseEnv(envPrefix))
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +40,7 @@ func GetSourcesRootPath() string {
 }
 
 func TestConfig(t testing.TB) *AppConfig {
-	cfg, err := LoadConfig(filepath.Join(GetSourcesRootPath(), "test.yaml"), "TEST")
+	cfg, err := LoadConfig("TEST", filepath.Join(GetSourcesRootPath(), "infra/config.yaml"))
 	require.NoError(t, err)
 	return cfg
 }

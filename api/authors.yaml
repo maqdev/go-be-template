@@ -7,35 +7,6 @@ info:
 servers:
   - url: http://example.com
 paths:
-  /login:
-    post:
-      summary: Create a login token
-      #      operationId: createAuthor
-      tags:
-        - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        201:
-          description: Auth token was created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                required:
-                  - token
-        default:
-          description: unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
   /authors:
     get:
       summary: List all authors
@@ -77,6 +48,7 @@ paths:
       tags:
         - authors
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -95,7 +67,8 @@ paths:
                 type: object
                 properties:
                   id:
-                    type: string
+                    type: integer
+                    format: int64
                 required:
                   - id
         default:

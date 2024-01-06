@@ -55,6 +55,7 @@ func run() error {
 		log.Error("Couldn't create DB pool", "err", err)
 		return err
 	}
+	defer pool.Close()
 
 	server, err := api.NewServer(service.NewHandler(cfg, pool), service.AuthHandler(cfg))
 	if err != nil {
