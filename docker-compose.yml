@@ -23,3 +23,16 @@ services:
     volumes:
         - ./db/migrations:/migrations
     command: "-path=/migrations/ -database postgres://${APP_DB_OWNER_USER}:${APP_DB_OWNER_PASS}@postgres/${APP_DB_NAME}?sslmode=disable up"
+  redis:
+    image: redis:7.2.3-alpine
+    environment:
+      - INITIAL_PORT=6379
+      - REDIS_CLUSTER=0.0.0.0
+      - IP=0.0.0.0
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "6379-6384:6379-6384"

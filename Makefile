@@ -3,6 +3,10 @@ LINT_OPTS=
 
 LINTER_VERSION=v1.55.2
 SQLC_VERSION=v1.25.0
+PROTOC_VERSION=3.21.2
+
+USER_ID = $(shell id -u)
+GROUP_ID = $(shell id -g)
 
 .PHONY: install-tools
 install-tools:
@@ -16,6 +20,11 @@ sqlc:
 .PHONY: build
 codegen:
 	@go generate ./...
+
+.PHONY: proto
+proto:
+	@mkdir -p ./gen/proto
+	@docker run --rm -v "${PWD}":"/data/" -w "/data/" --user "$(USER_ID):$(GROUP_ID)" "jaegertracing/protobuf:v0.5.0" --go_out="./gen/proto" --proto_path "./" "./proto/**/*.proto"
 
 .PHONY: build
 build:
@@ -50,3 +59,10 @@ deinit:
 .PHONY: reinit
 reinit: deinit init
 
+.PHONY: clean
+clean:
+	rm -rf ./gen/*
+
+#.PHONY: mocks
+#mocks: somata-mocks
+	#mockery --dir=abc --name=ABC --output ./gen/mocks/abc --recursive --with-expecter

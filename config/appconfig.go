@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"time"
 
@@ -9,9 +10,14 @@ import (
 )
 
 type AppConfig struct {
-	Log  LogConfig
-	HTTP HTTPConfig
-	DB   DBConfig
+	Log   LogConfig
+	HTTP  HTTPConfig
+	DB    DBConfig
+	Redis RedisConfig
+}
+
+type LogConfig struct {
+	Level Level
 }
 
 type HTTPConfig struct {
@@ -28,8 +34,9 @@ type DBConfig struct {
 	MaxConnections int32
 }
 
-type LogConfig struct {
-	Level Level
+type RedisConfig struct {
+	Opts        *redis.UniversalOptions
+	ClusterMode bool
 }
 
 type Level int
@@ -58,4 +65,12 @@ func (dbc DBConfig) CreatePool(ctx context.Context) (*pgxpool.Pool, error) {
 	config.MaxConns = dbc.MaxConnections
 
 	return pgxpool.NewWithConfig(ctx, config)
+}
+
+func (rc RedisConfig) CreateClient() (redis.UniversalClient, error) {
+	if rc.ClusterMode {
+		return redis.NewClusterClient(rc.Opts.Cluster()), nil
+	} else {
+		return redis.NewUniversalClient(rc.Opts), nil
+	}
 }

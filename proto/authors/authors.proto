@@ -1,0 +1,9 @@
+syntax = "proto3";
+package authors;
+
+option go_package = "github.com/maqdev/gen/proto/authors";
+
+message Author {
+  int64 ID = 10;
+  string Name = 20;
+}
