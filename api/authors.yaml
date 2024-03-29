@@ -5,7 +5,7 @@ info:
   license:
     name: BSD 3-Clause License
 servers:
-  - url: http://example.com
+  - url: http://localhost:18080
 paths:
   /authors:
     get:
