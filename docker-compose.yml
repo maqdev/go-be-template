@@ -23,6 +23,14 @@ services:
     volumes:
         - ./db/migrations:/migrations
     command: "-path=/migrations/ -database postgres://${APP_DB_OWNER_USER}:${APP_DB_OWNER_PASS}@postgres/${APP_DB_NAME}?sslmode=disable up"
+  migrations-testdata:
+    image: migrate/migrate:v4.17.0
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    volumes:
+        - ./db/migrations:/migrations
+    command: '-path=/migrations/testdata -database postgres://${APP_DB_OWNER_USER}:${APP_DB_OWNER_PASS}@postgres/${APP_DB_NAME}?sslmode=disable\&x-migrations-table=testdata_migrations up'
   redis:
     image: redis:7.2.3-alpine
     environment:

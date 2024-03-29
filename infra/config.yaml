@@ -1,7 +1,7 @@
 log:
   level: DEBUG # one of DEBUG, INFO, WARN, ERROR
 http:
-  address: 127.0.0.1:8080
+  address: 127.0.0.1:18080
   shutdownTimeout: 3s # timeout for graceful shutdown
   shutdownDelay: 5s # delay before starting shutdown, to allow for load balancer to stop sending traffic
   readTimeout: 15s
