@@ -51,6 +51,8 @@ lint-n-fix: _enable_lint_fix lint
 .PHONY: init
 init:
 	@docker-compose run migrations-testdata # this will create db and run migrations
+	@docker-compose up -d redis
+	@docker-compose exec redis redis-cli -c CLUSTER ADDSLOTSRANGE 0 16383
 
 .PHONY: deinit
 deinit:

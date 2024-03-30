@@ -57,7 +57,16 @@ func run() error {
 	}
 	defer pool.Close()
 
-	server, err := api.NewServer(service.NewHandler(cfg, pool), service.AuthHandler(cfg))
+	redisClient, err := cfg.Redis.CreateClient()
+	if err != nil {
+		log.Error("Couldn't connect to Redis", "err", err, "config", cfg.Redis)
+		return err
+	}
+	defer func() {
+		_ = redisClient.Close()
+	}()
+
+	server, err := api.NewServer(service.NewHandler(cfg, pool, redisClient), service.AuthHandler(cfg))
 	if err != nil {
 		log.Error("Server initialization failed", "err", err)
 		return err

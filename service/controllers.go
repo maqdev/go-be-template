@@ -6,6 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
+
+	"github.com/maqdev/go-be-template/gen/proto/github.com/maqdev/gen/proto/authors"
+	"github.com/maqdev/go-be-template/util/cacheutil"
+	"github.com/redis/go-redis/v9"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -23,35 +29,99 @@ import (
 
 const MaxPageSize = 500
 const DefaultPageSize = 10
+const AuthorsCacheTTL = time.Minute
 
-func NewHandler(cfg *config.AppConfig, dbPool *pgxpool.Pool) api.Handler {
+func NewHandler(cfg *config.AppConfig, dbPool *pgxpool.Pool, redisClient redis.UniversalClient) api.Handler {
 	return &handler{
-		cfg:     cfg,
-		queries: db.New(dbPool),
+		cfg:         cfg,
+		queries:     db.New(dbPool),
+		redisClient: redisClient,
 	}
 }
 
 type handler struct {
-	cfg     *config.AppConfig
-	queries *db.Queries
+	cfg         *config.AppConfig
+	queries     *db.Queries
+	redisClient redis.UniversalClient
 }
 
 func (h *handler) AuthorsAuthorIDGet(ctx context.Context, params api.AuthorsAuthorIDGetParams) (*api.Author, error) {
-	author, err := h.queries.GetAuthor(ctx, params.AuthorID)
+	authorIDStr := strconv.FormatInt(params.AuthorID, 36)
+	key := cacheutil.Create("author", cacheutil.HashTag(authorIDStr))
 
+	// 1. read from cache
+	var author db.Author
+	cacheValue, err := h.redisClient.Get(ctx, key).Bytes()
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
+		// cache read failure
+		if !errors.Is(err, redis.Nil) {
+			return nil, fmt.Errorf("failed to get author from cache: %w", err)
 		}
-		return nil, fmt.Errorf("failed to get author from DB: %w", err)
+
+		// cache miss - read from DB
+		author, err = h.queries.GetAuthor(ctx, params.AuthorID)
+
+		if err != nil {
+			// not exists in DB
+			if errors.Is(err, pgx.ErrNoRows) {
+				// cache empty object as indicator of 404
+				go func() {
+					ctxAsync, cancel := context.WithTimeout(context.WithoutCancel(ctx), cacheutil.RedisWriteTimeout)
+					defer cancel()
+
+					err = h.redisClient.Set(ctxAsync, key, []byte{}, AuthorsCacheTTL).Err()
+					if err != nil {
+						logutil.Get(ctxAsync).Error("Failed to cache empty author", "err", err)
+					}
+				}()
+
+				return nil, ErrNotFound
+			}
+			// DB read failure
+			return nil, fmt.Errorf("failed to get author from DB: %w", err)
+		}
+
+		// copy first (db model to cache model) and then cache async
+		authorCache := authors.Author{
+			ID:   author.ID,
+			Name: author.Name,
+		}
+		go func() {
+			ctxAsync, cancel := context.WithTimeout(context.WithoutCancel(ctx), cacheutil.RedisWriteTimeout)
+			defer cancel()
+
+			bytes, err := proto.Marshal(&authorCache)
+			if err != nil {
+				logutil.Get(ctxAsync).Error("Failed to marshal author for cache", "err", err)
+				return
+			}
+
+			err = h.redisClient.Set(ctxAsync, key, bytes, AuthorsCacheTTL).Err()
+			if err != nil {
+				logutil.Get(ctxAsync).Error("Failed to cache empty author", "err", err)
+			}
+		}()
+
+		return dbAuthorToResp(author)
+	} else if len(cacheValue) == 0 {
+		// cache hit with empty value
+		return nil, ErrNotFound
 	}
 
-	authorRes, err := dbAuthorToResp(author)
+	var authorCache authors.Author
+	err = proto.Unmarshal(cacheValue, &authorCache)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert author to response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal author from cache: %w", err)
 	}
 
-	return authorRes, nil
+	// convert cache model to db model
+	author = db.Author{
+		ID:   authorCache.GetID(),
+		Name: authorCache.GetName(),
+	}
+
+	// convert db model to response
+	return dbAuthorToResp(author)
 }
 
 func (h handler) AuthorsGet(ctx context.Context, params api.AuthorsGetParams) (*api.PagedAuthors, error) {

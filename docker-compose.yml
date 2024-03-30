@@ -32,7 +32,7 @@ services:
         - ./db/migrations:/migrations
     command: '-path=/migrations/testdata -database postgres://${APP_DB_OWNER_USER}:${APP_DB_OWNER_PASS}@postgres/${APP_DB_NAME}?sslmode=disable\&x-migrations-table=testdata_migrations up'
   redis:
-    image: redis:7.2.3-alpine
+    image: redis:7.2.4-alpine
     environment:
       - INITIAL_PORT=6379
       - REDIS_CLUSTER=0.0.0.0
@@ -44,3 +44,15 @@ services:
       retries: 5
     ports:
       - "6379-6384:6379-6384"
+    configs:
+      - source: redis.conf
+        target: /etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf
+configs:
+  redis.conf:
+    content: |
+      port 6379
+      cluster-enabled yes
+      cluster-config-file nodes.conf
+      cluster-node-timeout 5000
+      appendonly yes

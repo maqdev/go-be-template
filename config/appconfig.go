@@ -2,9 +2,11 @@ package config
 
 import (
 	"context"
-	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"time"
+
+	"github.com/go-faster/errors"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -68,6 +70,9 @@ func (dbc DBConfig) CreatePool(ctx context.Context) (*pgxpool.Pool, error) {
 }
 
 func (rc RedisConfig) CreateClient() (redis.UniversalClient, error) {
+	if rc.Opts == nil {
+		return nil, errors.New("RedisConfig.Opts is nil")
+	}
 	if rc.ClusterMode {
 		return redis.NewClusterClient(rc.Opts.Cluster()), nil
 	} else {
